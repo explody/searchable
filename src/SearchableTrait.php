@@ -2,9 +2,8 @@
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 /**
  * Trait SearchableTrait
@@ -108,8 +107,7 @@ trait SearchableTrait
      * @return array
      */
     protected function getDatabaseDriver() {
-        $key = $this->connection ?: Config::get('database.default');
-        return Config::get('database.connections.' . $key . '.driver');
+        return Capsule::connection()->getDriverName();
     }
 
     /**
@@ -121,14 +119,14 @@ trait SearchableTrait
     {
         if (array_key_exists('columns', $this->searchable)) {
             $driver = $this->getDatabaseDriver();
-            $prefix = Config::get("database.connections.$driver.prefix");
+            $prefix = Capsule::connection()->getTablePrefix();
             $columns = [];
             foreach($this->searchable['columns'] as $column => $priority){
                 $columns[$prefix . $column] = $priority;
             }
             return $columns;
         } else {
-            return DB::connection()->getSchemaBuilder()->getColumnListing($this->table);
+            return Capsule::connection()->getSchemaBuilder()->getColumnListing($this->table);
         }
     }
 
@@ -335,11 +333,11 @@ trait SearchableTrait
      * @param \Illuminate\Database\Eloquent\Builder $original
      */
     protected function mergeQueries(Builder $clone, Builder $original) {
-        $tableName = DB::connection($this->connection)->getTablePrefix() . $this->getTable();
+        $tableName = Capsule::connection()->getTablePrefix() . $this->getTable();
         if ($this->getDatabaseDriver() == 'pgsql') {
-            $original->from(DB::connection($this->connection)->raw("({$clone->toSql()}) as {$tableName}"));
+            $original->from(Capsule::connection()->raw("({$clone->toSql()}) as {$tableName}"));
         } else {
-            $original->from(DB::connection($this->connection)->raw("({$clone->toSql()}) as `{$tableName}`"));
+            $original->from(Capsule::connection()->raw("({$clone->toSql()}) as `{$tableName}`"));
         }
 
         $original->setBindings(
