@@ -38,13 +38,7 @@ trait SearchableTrait
     public function scopeSearchRestricted(Builder $q, $search, $restriction, $threshold = null, $entireText = false, $entireTextOnly = false)
     {
         $query = clone $q;
-
         $query->select($this->getTable() . '.*');
-        
-        foreach ($this->getWiths() as $relation) {
-            $q->with($relation);
-        }
-        
         $this->makeJoins($query);
 
         if ( ! $search)
@@ -168,16 +162,6 @@ trait SearchableTrait
     protected function getJoins()
     {
         return array_get($this->searchable, 'joins', []);
-    }
-    
-    /**
-     * Returns the tables that are to be joined.
-     *
-     * @return array
-     */
-    protected function getWiths()
-    {
-        return array_get($this->searchable, 'with', []);
     }
 
     /**
